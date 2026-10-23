@@ -1,0 +1,1017 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Learn My Letters! - Fun Alphabet Game for Kids</title>
+
+    <!-- Tailwind CSS for UI styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Google Fonts for child-friendly typography -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&family=Nunito:wght@600;800;900&display=swap" rel="stylesheet">
+
+    <style>
+        * {
+            font-family: 'Fredoka', 'Nunito', sans-serif;
+            user-select: none;
+            -webkit-user-select: none;
+            -webkit-touch-callout: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            background: linear-gradient(135deg, #e0f2fe 0%, #fef3c7 50%, #fbcfe8 100%);
+            min-height: 100vh;
+            touch-action: manipulation;
+            overflow-x: hidden;
+        }
+
+        /* Oversized touch targets for children */
+        .btn-kid {
+            min-height: 80px;
+            min-width: 80px;
+            transition: transform 0.15s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.15s ease;
+            box-shadow: 0 10px 0 0 rgba(0, 0, 0, 0.15), 0 15px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .btn-kid:active {
+            transform: translateY(6px) scale(0.98);
+            box-shadow: 0 4px 0 0 rgba(0, 0, 0, 0.15), 0 5px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Success Animation for Correct Answer */
+        @keyframes correctPop {
+            0% { transform: scale(1); }
+            40% { transform: scale(1.25) rotate(-3deg); }
+            70% { transform: scale(1.15) rotate(3deg); }
+            100% { transform: scale(1); }
+        }
+
+        .anim-correct {
+            animation: correctPop 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+            box-shadow: 0 0 35px #facc15, 0 10px 0 #d97706 !important;
+            border-color: #facc15 !important;
+            z-index: 20;
+        }
+
+        /* Floating particles overlay */
+        #confetti-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            pointer-events: none;
+            z-index: 100;
+        }
+
+        /* Pulse speaker animation */
+        @keyframes speakPulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.12); }
+        }
+        .anim-speak {
+            animation: speakPulse 0.8s infinite ease-in-out;
+        }
+
+        /* Scrollbar styling */
+        ::-webkit-scrollbar {
+            width: 12px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.5);
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #f472b6;
+            border-radius: 10px;
+        }
+    </style>
+</head>
+<body class="flex flex-col min-h-screen justify-between p-2 sm:p-4 text-slate-800">
+
+    <!-- Confetti Canvas -->
+    <canvas id="confetti-canvas"></canvas>
+
+    <!-- App Header Bar -->
+    <header class="w-full max-w-4xl mx-auto flex items-center justify-between bg-white/80 backdrop-blur-md rounded-3xl p-3 sm:p-4 shadow-lg border-4 border-white mb-2 sm:mb-4">
+        <!-- Home Button -->
+        <button id="nav-home-btn" onclick="showScreen('home-screen')" class="btn-kid bg-sky-400 hover:bg-sky-500 text-white rounded-2xl px-4 py-2 flex items-center gap-2 border-b-4 border-sky-600 text-xl font-bold">
+            <span class="text-2xl">🏠</span>
+            <span class="hidden sm:inline">Home</span>
+        </button>
+
+        <!-- Current Target/Goal & Daily Star Count -->
+        <div class="flex items-center gap-3 bg-amber-100 rounded-2xl px-4 py-2 border-2 border-amber-300">
+            <div class="flex items-center text-amber-600 font-extrabold text-2xl">
+                <span>⭐</span>
+                <span id="star-count-header" class="ml-1">0</span>
+            </div>
+            <div class="h-6 w-0.5 bg-amber-300"></div>
+            <!-- Daily Goal Badge -->
+            <div class="flex items-center gap-1 text-sm sm:text-base font-bold text-amber-800" title="Daily Goal">
+                <span>Goal:</span>
+                <span id="daily-star-count">0</span>/5
+            </div>
+        </div>
+
+        <!-- Speaker & Mute Toggle Controls -->
+        <div class="flex gap-2">
+            <button id="repeat-speaker-btn" onclick="replayAudioPrompt()" class="btn-kid bg-purple-500 hover:bg-purple-600 text-white rounded-2xl p-3 border-b-4 border-purple-700 text-2xl flex items-center justify-center" title="Hear Again">
+                🔊
+            </button>
+            <button id="mute-toggle-btn" onclick="toggleMute()" class="btn-kid bg-teal-400 hover:bg-teal-500 text-white rounded-2xl p-3 border-b-4 border-teal-600 text-2xl flex items-center justify-center" title="Toggle Sound">
+                🔔
+            </button>
+        </div>
+    </header>
+
+    <!-- MAIN CONTENT VIEW CONTAINER -->
+    <main class="flex-grow w-full max-w-4xl mx-auto flex flex-col justify-center items-center relative">
+
+        <!-- ==================== 1. HOME SCREEN ==================== -->
+        <section id="home-screen" class="w-full bg-white/90 backdrop-blur-md rounded-3xl p-6 sm:p-10 shadow-2xl border-4 border-white flex flex-col items-center text-center space-y-6">
+            <div class="space-y-2">
+                <h1 class="text-4xl sm:text-6xl font-black text-transparent bg-clip-text bg-gradient-to-r from-pink-500 via-purple-500 to-sky-500 tracking-wide drop-shadow-sm">
+                    LEARN MY LETTERS! 🎨
+                </h1>
+                <p class="text-lg sm:text-2xl text-slate-600 font-semibold">Fun alphabet adventure made for you!</p>
+            </div>
+
+            <!-- Giant Play Button -->
+            <button onclick="startPlaySession()" class="btn-kid bg-gradient-to-r from-emerald-400 to-green-500 hover:from-emerald-500 hover:to-green-600 text-white font-extrabold text-3xl sm:text-5xl rounded-3xl px-12 py-6 border-b-8 border-green-700 shadow-xl flex items-center gap-4 my-4 transform hover:scale-105">
+                <span>▶</span> PLAY NOW!
+            </button>
+
+            <!-- Overall Alphabet Progress Bar -->
+            <div class="w-full max-w-md bg-slate-100 rounded-2xl p-4 border-2 border-slate-200">
+                <div class="flex justify-between text-slate-700 font-bold mb-2 text-lg">
+                    <span>Alphabet Learned:</span>
+                    <span id="home-progress-text">0 / 26 Letters</span>
+                </div>
+                <div class="w-full bg-slate-200 h-6 rounded-full overflow-hidden p-1 border border-slate-300">
+                    <div id="home-progress-bar" class="bg-gradient-to-r from-amber-400 to-emerald-400 h-full rounded-full transition-all duration-500" style="width: 0%;"></div>
+                </div>
+            </div>
+
+            <!-- Navigation Links: Rewards, Alphabet Grid, Teacher Area -->
+            <div class="grid grid-cols-2 sm:grid-cols-3 gap-4 w-full max-w-md">
+                <button onclick="showScreen('rewards-screen')" class="btn-kid bg-pink-400 hover:bg-pink-500 text-white font-bold rounded-2xl p-4 border-b-4 border-pink-600 flex flex-col items-center gap-1 text-lg">
+                    <span class="text-3xl">🎁</span>
+                    <span>My Rewards</span>
+                </button>
+                <button onclick="showScreen('alphabet-screen')" class="btn-kid bg-indigo-400 hover:bg-indigo-500 text-white font-bold rounded-2xl p-4 border-b-4 border-indigo-600 flex flex-col items-center gap-1 text-lg">
+                    <span class="text-3xl">🔤</span>
+                    <span>Alphabet Map</span>
+                </button>
+                <button onclick="openAdultGate()" class="btn-kid bg-slate-400 hover:bg-slate-500 text-white font-bold rounded-2xl p-4 border-b-4 border-slate-600 flex flex-col items-center gap-1 text-lg col-span-2 sm:col-span-1">
+                    <span class="text-3xl">⚙️</span>
+                    <span>Grown-ups</span>
+                </button>
+            </div>
+        </section>
+
+        <!-- ==================== 2. GAME / ACTIVITY SCREEN ==================== -->
+        <section id="game-screen" class="w-full bg-white/90 backdrop-blur-md rounded-3xl p-4 sm:p-8 shadow-2xl border-4 border-white flex flex-col items-center justify-between min-h-[500px] hidden">
+            
+            <!-- Activity Stage Banner Prompt -->
+            <div class="w-full bg-amber-50 rounded-2xl p-4 border-2 border-amber-200 text-center mb-4 flex items-center justify-center gap-3">
+                <button onclick="replayAudioPrompt()" class="text-3xl hover:scale-110 transition-transform" title="Listen">📢</button>
+                <h2 id="activity-prompt-text" class="text-2xl sm:text-4xl font-black text-amber-900 tracking-wide">
+                    Find the letter A
+                </h2>
+            </div>
+
+            <!-- Dynamic Activity Visual Container (Look & Hear, Target Letter, Picture, etc.) -->
+            <div id="activity-display-area" class="flex flex-col items-center justify-center my-4 w-full flex-grow">
+                <!-- Content injected via JS -->
+            </div>
+
+            <!-- Choices Grid Container (Oversized touch targets for options) -->
+            <div id="activity-options-container" class="w-full grid gap-4 mt-4 min-h-[120px]">
+                <!-- Choice buttons injected dynamically -->
+            </div>
+        </section>
+
+        <!-- ==================== 3. ALPHABET MAP GRID SCREEN ==================== -->
+        <section id="alphabet-screen" class="w-full bg-white/90 backdrop-blur-md rounded-3xl p-6 sm:p-8 shadow-2xl border-4 border-white flex flex-col items-center space-y-6 hidden">
+            <div class="flex justify-between items-center w-full">
+                <h2 class="text-3xl sm:text-4xl font-extrabold text-indigo-600">My Alphabet Map 🗺️</h2>
+                <button onclick="showScreen('home-screen')" class="btn-kid bg-slate-300 hover:bg-slate-400 text-slate-800 px-4 py-2 rounded-2xl font-bold border-b-4 border-slate-500">Back</button>
+            </div>
+
+            <!-- 26 Letter Status Grid -->
+            <div id="alphabet-grid" class="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-7 gap-3 w-full">
+                <!-- 26 Letter Cards dynamically injected -->
+            </div>
+        </section>
+
+        <!-- ==================== 4. MY REWARDS GALLERY ==================== -->
+        <section id="rewards-screen" class="w-full bg-white/90 backdrop-blur-md rounded-3xl p-6 sm:p-8 shadow-2xl border-4 border-white flex flex-col items-center space-y-6 hidden">
+            <div class="flex justify-between items-center w-full">
+                <h2 class="text-3xl sm:text-4xl font-extrabold text-pink-500">My Toy Chest 🎁</h2>
+                <button onclick="showScreen('home-screen')" class="btn-kid bg-slate-300 hover:bg-slate-400 text-slate-800 px-4 py-2 rounded-2xl font-bold border-b-4 border-slate-500">Back</button>
+            </div>
+
+            <p class="text-lg text-slate-600 font-semibold text-center">Every correct answer earns a sweet reward!</p>
+
+            <div id="rewards-gallery-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 w-full">
+                <!-- Rewards count tiles injected here -->
+            </div>
+        </section>
+
+        <!-- ==================== 5. ADULT GATE SCREEN ==================== -->
+        <section id="adult-gate-screen" class="w-full bg-white/90 backdrop-blur-md rounded-3xl p-8 shadow-2xl border-4 border-white flex flex-col items-center text-center space-y-6 max-w-md hidden">
+            <h2 class="text-3xl font-extrabold text-slate-800">Grown-ups Only 🔒</h2>
+            <p class="text-slate-600 font-semibold text-lg">To access adult settings, press and hold the button below for 3 seconds.</p>
+
+            <!-- Hold Button with Progress Ring -->
+            <button id="adult-hold-btn" class="btn-kid bg-slate-700 hover:bg-slate-800 text-white font-extrabold text-2xl rounded-3xl p-8 border-b-8 border-slate-900 shadow-2xl relative overflow-hidden select-none">
+                <span id="adult-hold-text">PRESS & HOLD 3s</span>
+                <div id="adult-hold-progress" class="absolute bottom-0 left-0 bg-emerald-500 h-2 w-0 transition-all duration-100"></div>
+            </button>
+
+            <button onclick="showScreen('home-screen')" class="text-slate-500 font-bold underline hover:text-slate-700">Cancel</button>
+        </section>
+
+        <!-- ==================== 6. ADULT / TEACHER DASHBOARD ==================== -->
+        <section id="adult-admin-screen" class="w-full bg-white/90 backdrop-blur-md rounded-3xl p-6 sm:p-8 shadow-2xl border-4 border-white flex flex-col items-center space-y-6 hidden">
+            <div class="flex justify-between items-center w-full border-b-2 border-slate-200 pb-4">
+                <h2 class="text-3xl font-extrabold text-slate-800">Teacher & Parent Dashboard ⚙️</h2>
+                <button onclick="showScreen('home-screen')" class="btn-kid bg-slate-300 hover:bg-slate-400 text-slate-800 px-4 py-2 rounded-2xl font-bold border-b-4 border-slate-500">Exit</button>
+            </div>
+
+            <!-- Controls: Unlock All, Reset Progress -->
+            <div class="flex flex-wrap gap-4 w-full justify-between items-center bg-slate-100 p-4 rounded-2xl">
+                <label class="flex items-center gap-3 text-lg font-bold text-slate-700 cursor-pointer">
+                    <input type="checkbox" id="unlock-all-checkbox" onchange="toggleUnlockAll(this.checked)" class="w-6 h-6 rounded text-emerald-500">
+                    <span>Unlock All 26 Letters</span>
+                </label>
+
+                <button onclick="confirmResetProgress()" class="btn-kid bg-red-500 hover:bg-red-600 text-white font-bold rounded-2xl px-4 py-2 border-b-4 border-red-700">
+                    ⚠️ Reset Progress
+                </button>
+            </div>
+
+            <!-- Detailed Letter Progress Table -->
+            <div class="w-full overflow-x-auto max-h-96">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="bg-slate-200 text-slate-700 text-sm font-bold">
+                            <th class="p-2 rounded-l-lg">Letter</th>
+                            <th class="p-2">Status</th>
+                            <th class="p-2">Attempts</th>
+                            <th class="p-2">Correct</th>
+                            <th class="p-2 rounded-r-lg">Mastery %</th>
+                        </tr>
+                    </thead>
+                    <tbody id="admin-table-body" class="text-slate-800 font-semibold text-base">
+                        <!-- Table rows injected via JS -->
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- ==================== DAILY GOAL CELEBRATION MODAL ==================== -->
+    <div id="daily-goal-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 hidden">
+        <div class="bg-white rounded-3xl p-8 max-w-md w-full text-center space-y-6 shadow-2xl border-4 border-amber-300 transform scale-100 transition-all">
+            <div class="text-6xl animate-bounce">🏆🎉</div>
+            <h3 class="text-4xl font-black text-amber-500">YOU DID IT!</h3>
+            <p class="text-xl text-slate-700 font-bold">You completed your 5 daily star goal!</p>
+            <div class="text-5xl">⭐ ⭐ ⭐ ⭐ ⭐</div>
+            <button onclick="closeDailyGoalModal()" class="btn-kid bg-gradient-to-r from-amber-400 to-emerald-400 text-white font-extrabold text-2xl rounded-2xl px-8 py-4 border-b-4 border-amber-600 w-full">
+                Keep Playing! 🚀
+            </button>
+        </div>
+    </div>
+
+    <script>
+
+        // ==================== A-Z ILLUSTRATION DICTIONARY & PHONICS ====================
+        const ALPHABET_DATA = {
+            'A': { word: 'Apple', sound: 'ah', soundText: 'A says /a/', svg: `<svg viewBox="0 0 100 100" class="w-full h-full"><path d="M50 20 C20 10, 10 40, 20 70 C30 95, 50 95, 50 80 C50 95, 70 95, 80 70 C90 40, 80 10, 50 20 Z" fill="#ef4444"/><path d="M50 20 Q55 5 60 5" stroke="#78350f" stroke-width="5" fill="none" stroke-linecap="round"/><path d="M50 18 Q65 10 70 20 Q55 25 50 18" fill="#22c55e"/></svg>` },
+            'B': { word: 'Ball', sound: 'buh', soundText: 'B says /b/', svg: `<svg viewBox="0 0 100 100" class="w-full h-full"><circle cx="50" cy="50" r="40" fill="#3b82f6"/><path d="M10 50 A40 40 0 0 0 90 50 Z" fill="#ef4444"/><path d="M50 10 A40 40 0 0 0 50 90 Z" fill="#eab308"/><circle cx="50" cy="50" r="40" fill="none" stroke="#ffffff" stroke-width="4"/></svg>` },
+            'C': { word: 'Cat', sound: 'kuh', soundText: 'C says /c/', svg: `<svg viewBox="0 0 100 100" class="w-full h-full"><polygon points="20,20 35,40 15,45" fill="#f97316"/><polygon points="80,20 65,40 85,45" fill="#f97316"/><circle cx="50" cy="55" r="35" fill="#fb923c"/><circle cx="38" cy="50" r="5" fill="#1e293b"/><circle cx="62" cy="50" r="5" fill="#1e293b"/><polygon points="46,60 54,60 50,65" fill="#f43f5e"/><path d="M30 62 L10 58 M30 66 L12 68 M70 62 L90 58 M70 66 L88 68" stroke="#1e293b" stroke-width="3"/></svg>` },
+            'D': { word: 'Dog', sound: 'duh', soundText: 'D says /d/', svg: `<svg viewBox="0 0 100 100" class="w-full h-full"><path d="M20 25 Q10 50 20 70" fill="#a16207" stroke="#a16207" stroke-width="12" stroke-linecap="round"/><path d="M80 25 Q90 50 80 70" fill="#a16207" stroke="#a16207" stroke-width="12" stroke-linecap="round"/><circle cx="50" cy="50" r="32" fill="#ca8a04"/><circle cx="38" cy="45" r="4" fill="#1e293b"/><circle cx="62" cy="45" r="4" fill="#1e293b"/><ellipse cx="50" cy="58" rx="8" ry="6" fill="#1e293b"/><path d="M50 64 Q50 75 58 70" fill="#f43f5e"/></svg>` },
+            'E': { word: 'Elephant', sound: 'eh', soundText: 'E says /e/', svg: `<svg viewBox="0 0 100 100" class="w-full h-full"><circle cx="20" cy="45" r="18" fill="#94a3b8"/><circle cx="80" cy="45" r="18" fill="#94a3b8"/><circle cx="50" cy="50" r="30" fill="#cbd5e1"/><circle cx="38" cy="42" r="4" fill="#1e293b"/><circle cx="62" cy="42" r="4" fill="#1e293b"/><path d="M50 52 Q50 80 65 70 Q60 65 52 65" fill="#94a3b8" stroke="#64748b" stroke-width="2"/></svg>` },
+            'F': { word: 'Fish', sound: 'fff', soundText: 'F says /f/', svg: `<svg viewBox="0 0 100 100" class="w-full h-full"><path d="M20 50 C40 20, 80 30, 85 50 C80 70, 40 80, 20 50 Z" fill="#f97316"/><polygon points="20,50 5,30 5,70" fill="#f97316"/><circle cx="70" cy="42" r="4" fill="#1e293b"/><path d="M40 38 Q50 50 40 62" fill="none" stroke="#ea580c" stroke-width="4"/></svg>` },
+            'G': { word: 'Grapes', sound: 'guh', soundText: 'G says /g/', svg: `<svg viewBox="0 0 100 100" class="w-full h-full"><path d="M50 15 Q55 5 60 5" stroke="#78350f" stroke-width="4" fill="none"/><path d="M50 15 Q65 5 70 15 Q55 20 50 15" fill="#22c55e"/><circle cx="38" cy="30" r="12" fill="#a855f7"/><circle cx="62" cy="30" r="12" fill="#a855f7"/><circle cx="26" cy="48" r="12" fill="#9333ea"/><circle cx="50" cy="48" r="12" fill="#a855f7"/><circle cx="74" cy="48" r="12" fill="#9333ea"/><circle cx="38" cy="66" r="12" fill="#7e22ce"/><circle cx="62" cy="66" r="12" fill="#7e22ce"/><circle cx="50" cy="82" r="12" fill="#6b21a8"/></svg>` },
+            'H': { word: 'Hat', sound: 'huh', soundText: 'H says /h/', svg: `<svg viewBox="0 0 100 100" class="w-full h-full"><path d="M20 55 C20 20, 80 20, 80 55 Z" fill="#0284c7"/><ellipse cx="50" cy="55" rx="45" ry="10" fill="#0369a1"/><rect x="20" y="48" width="60" height="8" fill="#f43f5e"/></svg>` },
+            'I': { word: 'Ice Cream', sound: 'ih', soundText: 'I says /i/', svg: `<svg viewBox="0 0 100 100" class="w-full h-full"><polygon points="35,45 65,45 50,90" fill="#d97706"/><circle cx="50" cy="38" r="22" fill="#f472b6"/><circle cx="50" cy="14" r="7" fill="#dc2626"/></svg>` },
+            'J': { word: 'Juice', sound: 'juh', soundText: 'J says /j/', svg: `<svg viewBox="0 0 100 100" class="w-full h-full"><rect x="30" y="25" width="40" height="60" rx="8" fill="#fb923c"/><line x1="55" y1="5" x2="45" y2="30" stroke="#f43f5e" stroke-width="6" stroke-linecap="round"/><circle cx="50" cy="55" r="14" fill="#facc15"/></svg>` },
+            'K': { word: 'Kite', sound: 'kuh', soundText: 'K says /k/', svg: `<svg viewBox="0 0 100 100" class="w-full h-full"><polygon points="50,10 80,45 50,85 20,45" fill="#ef4444"/><polygon points="50,10 80,45 50,45" fill="#facc15"/><polygon points="50,45 80,45 50,85" fill="#3b82f6"/><polygon points="20,45 50,45 50,85" fill="#22c55e"/><path d="M50 85 Q60 92 55 100" fill="none" stroke="#1e293b" stroke-width="2"/></svg>` },
+            'L': { word: 'Lion', sound: 'lll', soundText: 'L says /l/', svg: `<svg viewBox="0 0 100 100" class="w-full h-full"><circle cx="50" cy="50" r="40" fill="#d97706"/><circle cx="50" cy="50" r="28" fill="#fbbf24"/><circle cx="40" cy="44" r="4" fill="#1e293b"/><circle cx="60" cy="44" r="4" fill="#1e293b"/><polygon points="45,52 55,52 50,58" fill="#1e293b"/><path d="M42 62 Q50 68 58 62" fill="none" stroke="#1e293b" stroke-width="3"/></svg>` },
+            'M': { word: 'Moon', sound: 'mmm', soundText: 'M says /m/', svg: `<svg viewBox="0 0 100 100" class="w-full h-full"><path d="M65 15 A35 35 0 1 0 85 65 A28 28 0 1 1 65 15 Z" fill="#facc15"/><circle cx="45" cy="50" r="3" fill="#ca8a04"/><circle cx="58" cy="62" r="3" fill="#ca8a04"/></svg>` },
+            'N': { word: 'Nest', sound: 'nnn', soundText: 'N says /n/', svg: `<svg viewBox="0 0 100 100" class="w-full h-full"><path d="M15 50 Q50 90 85 50 Z" fill="#854d0e"/><circle cx="38" cy="45" r="10" fill="#38bdf8"/><circle cx="50" cy="40" r="10" fill="#38bdf8"/><circle cx="62" cy="45" r="10" fill="#38bdf8"/></svg>` },
+            'O': { word: 'Orange', sound: 'oh', soundText: 'O says /o/', svg: `<svg viewBox="0 0 100 100" class="w-full h-full"><circle cx="50" cy="55" r="35" fill="#f97316"/><path d="M50 20 Q60 10 65 15 Q55 22 50 20" fill="#22c55e"/><circle cx="40" cy="45" r="2" fill="#ea580c"/><circle cx="60" cy="60" r="2" fill="#ea580c"/><circle cx="52" cy="70" r="2" fill="#ea580c"/></svg>` },
+            'P': { word: 'Pizza', sound: 'puh', soundText: 'P says /p/', svg: `<svg viewBox="0 0 100 100" class="w-full h-full"><polygon points="50,15 85,85 15,85" fill="#facc15"/><path d="M15 85 Q50 95 85 85" stroke="#d97706" stroke-width="10" fill="none" stroke-linecap="round"/><circle cx="50" cy="45" r="6" fill="#dc2626"/><circle cx="38" cy="65" r="6" fill="#dc2626"/><circle cx="62" cy="65" r="6" fill="#dc2626"/></svg>` },
+            'Q': { word: 'Queen', sound: 'kwah', soundText: 'Q says /q/', svg: `<svg viewBox="0 0 100 100" class="w-full h-full"><path d="M20 75 L15 30 L35 50 L50 20 L65 50 L85 30 L80 75 Z" fill="#eab308"/><rect x="20" y="70" width="60" height="10" fill="#a855f7"/><circle cx="15" cy="25" r="5" fill="#ef4444"/><circle cx="50" cy="15" r="5" fill="#3b82f6"/><circle cx="85" cy="25" r="5" fill="#ef4444"/></svg>` },
+            'R': { word: 'Rabbit', sound: 'rrr', soundText: 'R says /r/', svg: `<svg viewBox="0 0 100 100" class="w-full h-full"><ellipse cx="38" cy="30" rx="8" ry="22" fill="#e2e8f0"/><ellipse cx="38" cy="30" rx="4" ry="16" fill="#f472b6"/><ellipse cx="62" cy="30" rx="8" ry="22" fill="#e2e8f0"/><ellipse cx="62" cy="30" rx="4" ry="16" fill="#f472b6"/><circle cx="50" cy="60" r="28" fill="#f8fafc"/><circle cx="40" cy="52" r="4" fill="#1e293b"/><circle cx="60" cy="52" r="4" fill="#1e293b"/><polygon points="46,60 54,60 50,65" fill="#f472b6"/></svg>` },
+            'S': { word: 'Sun', sound: 'sss', soundText: 'S says /s/', svg: `<svg viewBox="0 0 100 100" class="w-full h-full"><circle cx="50" cy="50" r="25" fill="#facc15"/><path d="M50 10 L50 20 M50 80 L50 90 M10 50 L20 50 M80 50 L90 50 M22 22 L29 29 M71 71 L78 78 M22 78 L29 71 M71 29 L78 22" stroke="#f59e0b" stroke-width="6" stroke-linecap="round"/><circle cx="43" cy="46" r="3" fill="#1e293b"/><circle cx="57" cy="46" r="3" fill="#1e293b"/><path d="M42 55 Q50 62 58 55" fill="none" stroke="#1e293b" stroke-width="3"/></svg>` },
+            'T': { word: 'Turtle', sound: 'tuh', soundText: 'T says /t/', svg: `<svg viewBox="0 0 100 100" class="w-full h-full"><circle cx="75" cy="50" r="12" fill="#4ade80"/><ellipse cx="45" cy="50" rx="28" ry="22" fill="#15803d"/><circle cx="78" cy="47" r="2" fill="#1e293b"/><circle cx="30" cy="32" r="7" fill="#4ade80"/><circle cx="60" cy="32" r="7" fill="#4ade80"/><circle cx="30" cy="68" r="7" fill="#4ade80"/><circle cx="60" cy="68" r="7" fill="#4ade80"/></svg>` },
+            'U': { word: 'Umbrella', sound: 'uh', soundText: 'U says /u/', svg: `<svg viewBox="0 0 100 100" class="w-full h-full"><path d="M15 55 C15 20, 85 20, 85 55 Z" fill="#06b6d4"/><path d="M50 55 L50 85 Q50 92 42 90" fill="none" stroke="#475569" stroke-width="5" stroke-linecap="round"/><path d="M15 55 Q26 48 38 55 Q50 48 62 55 Q74 48 85 55" fill="#f43f5e"/></svg>` },
+            'V': { word: 'Van', sound: 'vvv', soundText: 'V says /v/', svg: `<svg viewBox="0 0 100 100" class="w-full h-full"><rect x="15" y="35" width="70" height="35" rx="8" fill="#ef4444"/><rect x="55" y="40" width="22" height="15" rx="3" fill="#38bdf8"/><circle cx="30" cy="70" r="10" fill="#1e293b"/><circle cx="30" cy="70" r="4" fill="#94a3b8"/><circle cx="70" cy="70" r="10" fill="#1e293b"/><circle cx="70" cy="70" r="4" fill="#94a3b8"/></svg>` },
+            'W': { word: 'Watermelon', sound: 'wuh', soundText: 'W says /w/', svg: `<svg viewBox="0 0 100 100" class="w-full h-full"><path d="M10 40 Q50 95 90 40 Z" fill="#ef4444"/><path d="M10 40 Q50 95 90 40" stroke="#16a34a" stroke-width="10" fill="none"/><circle cx="35" cy="52" r="3" fill="#1e293b"/><circle cx="50" cy="65" r="3" fill="#1e293b"/><circle cx="65" cy="52" r="3" fill="#1e293b"/></svg>` },
+            'X': { word: 'Xylophone', sound: 'ks', soundText: 'X says /x/', svg: `<svg viewBox="0 0 100 100" class="w-full h-full"><rect x="15" y="20" width="70" height="10" fill="#ef4444" rx="3"/><rect x="20" y="35" width="60" height="10" fill="#f97316" rx="3"/><rect x="25" y="50" width="50" height="10" fill="#facc15" rx="3"/><rect x="30" y="65" width="40" height="10" fill="#22c55e" rx="3"/><rect x="35" y="80" width="30" height="10" fill="#3b82f6" rx="3"/></svg>` },
+            'Y': { word: 'Yo-yo', sound: 'yuh', soundText: 'Y says /y/', svg: `<svg viewBox="0 0 100 100" class="w-full h-full"><path d="M50 10 L50 40" stroke="#f8fafc" stroke-width="4"/><circle cx="50" cy="60" r="28" fill="#dc2626"/><circle cx="50" cy="60" r="16" fill="#fca5a5"/><circle cx="50" cy="60" r="6" fill="#dc2626"/></svg>` },
+            'Z': { word: 'Zebra', sound: 'zzz', soundText: 'Z says /z/', svg: `<svg viewBox="0 0 100 100" class="w-full h-full"><circle cx="50" cy="50" r="35" fill="#f8fafc" stroke="#1e293b" stroke-width="4"/><path d="M20 40 L40 45 L20 50 M80 40 L60 45 L80 50 M25 65 L45 60 L25 70" stroke="#1e293b" stroke-width="5" stroke-linecap="round"/><circle cx="40" cy="40" r="4" fill="#1e293b"/><circle cx="60" cy="40" r="4" fill="#1e293b"/><ellipse cx="50" cy="60" rx="10" ry="6" fill="#1e293b"/></svg>` }
+        };
+
+        const REWARD_TYPES = [
+            { id: 'star', name: 'Stars', icon: '⭐' },
+            { id: 'balloon', name: 'Balloons', icon: '🎈' },
+            { id: 'animal', name: 'Puppies', icon: '🐶' },
+            { id: 'butterfly', name: 'Butterflies', icon: '🦋' },
+            { id: 'car', name: 'Cars', icon: '🚗' },
+            { id: 'rainbow', name: 'Rainbows', icon: '🌈' },
+            { id: 'apple', name: 'Apples', icon: '🍎' }
+        ];
+
+
+        // ==================== APPLICATION STATE ====================
+        let appState = {
+            stars: 0,
+            dailyStars: 0,
+            lastDate: new Date().toISOString().split('T')[0],
+            rewards: { star: 0, balloon: 0, animal: 0, butterfly: 0, car: 0, rainbow: 0, apple: 0 },
+            letters: {},
+            unlockedAll: false,
+            muted: false
+        };
+
+        let currentActivity = null;
+        let isAnswerLocked = false;
+        let audioCtx = null;
+
+        // Initialize state defaults
+        function initAppState() {
+            const saved = localStorage.getItem('letter_app_state_v1');
+            if (saved) {
+                try {
+                    appState = JSON.parse(saved);
+                } catch(e) { console.error("Error loading state", e); }
+            }
+
+            // Check daily reset
+            const today = new Date().toISOString().split('T')[0];
+            if (appState.lastDate !== today) {
+                appState.dailyStars = 0;
+                appState.lastDate = today;
+            }
+
+            // Ensure all 26 letters exist in data
+            Object.keys(ALPHABET_DATA).forEach((char, idx) => {
+                if (!appState.letters[char]) {
+                    appState.letters[char] = {
+                        introduced: idx === 0, // 'A' starts introduced
+                        attempts: 0,
+                        correct: 0,
+                        masteryScore: 0,
+                        status: idx === 0 ? 'learning' : 'locked'
+                    };
+                }
+            });
+
+            saveAppState();
+            updateHeaderUI();
+        }
+
+        function saveAppState() {
+            localStorage.setItem('letter_app_state_v1', JSON.stringify(appState));
+        }
+
+
+        // ==================== WEB AUDIO API SOUND GENERATOR ====================
+        function playTone(freq, type, duration) {
+            if (appState.muted) return;
+            try {
+                if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                if (audioCtx.state === 'suspended') audioCtx.resume();
+
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = type;
+                osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+
+                gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+
+                osc.start();
+                osc.stop(audioCtx.currentTime + duration);
+            } catch (e) {
+                console.log("Audio not allowed yet", e);
+            }
+        }
+
+        // Play cheerful arpeggio sound for success
+        function playSuccessArpeggio() {
+            if (appState.muted) return;
+            const notes = [523.25, 659.25, 783.99, 1046.50]; // C5, E5, G5, C6
+            notes.forEach((freq, idx) => {
+                setTimeout(() => playTone(freq, 'sine', 0.25), idx * 90);
+            });
+        }
+
+        // ==================== WEB SPEECH API CONTROLLER ====================
+        function speakText(text, rate = 0.85) {
+            if (appState.muted) return;
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel(); // stop previous speech
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.rate = rate;
+                utterance.pitch = 1.1; // kid-friendly friendly pitch
+                
+                // Attempt to pick a smooth English voice
+                const voices = window.speechSynthesis.getVoices();
+                const preferredVoice = voices.find(v => v.lang.startsWith('en') && (v.name.includes('Natural') || v.name.includes('Google') || v.name.includes('Samantha')));
+                if (preferredVoice) utterance.voice = preferredVoice;
+
+                window.speechSynthesis.speak(utterance);
+            }
+        }
+
+        function toggleMute() {
+            appState.muted = !appState.muted;
+            if (appState.muted && 'speechSynthesis' in window) {
+                window.speechSynthesis.cancel();
+            }
+            saveAppState();
+            updateHeaderUI();
+            if (!appState.muted) speakText("Sound on!");
+        }
+
+        function replayAudioPrompt() {
+            if (currentActivity && currentActivity.speechPrompt) {
+                speakText(currentActivity.speechPrompt);
+            } else {
+                speakText("Let's learn letters!");
+            }
+        }
+
+
+        // ==================== SCREEN NAVIGATION ====================
+        function showScreen(screenId) {
+            const screens = ['home-screen', 'game-screen', 'alphabet-screen', 'rewards-screen', 'adult-gate-screen', 'adult-admin-screen'];
+            screens.forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.classList.add('hidden');
+            });
+
+            const target = document.getElementById(screenId);
+            if (target) target.classList.remove('hidden');
+
+            if (screenId === 'alphabet-screen') renderAlphabetGrid();
+            if (screenId === 'rewards-screen') renderRewardsGallery();
+            if (screenId === 'adult-admin-screen') renderAdminTable();
+
+            updateHeaderUI();
+        }
+
+        function updateHeaderUI() {
+            document.getElementById('star-count-header').innerText = appState.stars;
+            document.getElementById('daily-star-count').innerText = appState.dailyStars;
+            document.getElementById('mute-toggle-btn').innerText = appState.muted ? '🔇' : '🔔';
+
+            // Progress bar on home screen
+            const masteredCount = Object.values(appState.letters).filter(l => l.status === 'mastered').length;
+            document.getElementById('home-progress-text').innerText = `${masteredCount} / 26 Letters`;
+            document.getElementById('home-progress-bar').style.width = `${(masteredCount / 26) * 100}%`;
+        }
+
+
+        // ==================== ADAPTIVE PROGRESSION LOGIC ====================
+        function getIntroducedLetters() {
+            if (appState.unlockedAll) return Object.keys(ALPHABET_DATA);
+            const list = Object.keys(appState.letters).filter(char => appState.letters[char].introduced);
+            return list.length > 0 ? list : ['A'];
+        }
+
+        function checkAndIntroduceNextLetter() {
+            if (appState.unlockedAll) return;
+            const keys = Object.keys(ALPHABET_DATA);
+            for (let i = 0; i < keys.length; i++) {
+                const char = keys[i];
+                const lData = appState.letters[char];
+                if (!lData.introduced) {
+                    // Introduce if previous letter has at least 3 correct attempts
+                    const prevChar = keys[i - 1];
+                    if (!prevChar || (appState.letters[prevChar] && appState.letters[prevChar].correct >= 3)) {
+                        lData.introduced = true;
+                        lData.status = 'learning';
+                        saveAppState();
+                    }
+                    break;
+                }
+            }
+        }
+
+        function startPlaySession() {
+            showScreen('game-screen');
+            generateNextActivity();
+        }
+
+        // Activity Generator across 8 diverse stages
+        function generateNextActivity() {
+            isAnswerLocked = false;
+            checkAndIntroduceNextLetter();
+
+            const introduced = getIntroducedLetters();
+            
+            // Pick target letter (favor letters with lower mastery scores)
+            introduced.sort((a, b) => appState.letters[a].masteryScore - appState.letters[b].masteryScore);
+            const targetChar = introduced[Math.floor(Math.random() * Math.min(3, introduced.length))];
+            const letterInfo = ALPHABET_DATA[targetChar];
+            const targetData = appState.letters[targetChar];
+
+            // Pick stage based on mastery / attempts
+            let stage = 1;
+            if (targetData.attempts < 2) {
+                stage = 1; // Look & Hear
+            } else {
+                // Randomly select stage 2 to 8
+                const stages = [2, 2, 3, 4, 5, 6, 7, 8];
+                stage = stages[Math.floor(Math.random() * stages.length)];
+            }
+
+            // Distractors generator
+            const getDistractors = (count) => {
+                const choices = new Set([targetChar]);
+                const allKeys = Object.keys(ALPHABET_DATA);
+                while (choices.size < count) {
+                    const randomChar = allKeys[Math.floor(Math.random() * allKeys.length)];
+                    choices.add(randomChar);
+                }
+                return Array.from(choices).sort(() => Math.random() - 0.5);
+            };
+
+            currentActivity = { targetChar, stage, letterInfo };
+
+            // Render activity by stage
+            switch (stage) {
+                case 1: // STAGE 1 — LOOK AND HEAR
+                    currentActivity.prompt = `Letter ${targetChar}`;
+                    currentActivity.speechPrompt = `Letter ${targetChar}. ${letterInfo.word}. Touch the letter!`;
+                    renderStage1(targetChar, letterInfo);
+                    break;
+
+                case 2: // STAGE 2 — FIND THE LETTER
+                    currentActivity.prompt = `Find ${targetChar}`;
+                    currentActivity.speechPrompt = `Can you find letter ${targetChar}?`;
+                    renderStageLetterChoices(targetChar, getDistractors(Math.min(2 + Math.floor(targetData.correct / 2), 4)), false);
+                    break;
+
+                case 3: // STAGE 3 — MATCH LETTERS
+                    currentActivity.prompt = `Match ${targetChar}`;
+                    currentActivity.speechPrompt = `Touch the matching letter ${targetChar}!`;
+                    renderStageLetterChoices(targetChar, getDistractors(3), false, targetChar);
+                    break;
+
+                case 4: // STAGE 4 — UPPERCASE TO LOWERCASE
+                    currentActivity.prompt = `Find lowercase for ${targetChar}`;
+                    currentActivity.speechPrompt = `Touch lowercase ${targetChar.toLowerCase()}`;
+                    renderStageUpperToLower(targetChar, getDistractors(3));
+                    break;
+
+                case 5: // STAGE 5 — LOWERCASE TO UPPERCASE
+                    currentActivity.prompt = `Find uppercase for ${targetChar.toLowerCase()}`;
+                    currentActivity.speechPrompt = `Touch uppercase ${targetChar}`;
+                    renderStageLowerToUpper(targetChar, getDistractors(3));
+                    break;
+
+                case 6: // STAGE 6 — LETTER TO PICTURE
+                    currentActivity.prompt = `Which picture starts with ${targetChar}?`;
+                    currentActivity.speechPrompt = `Which picture starts with ${targetChar}? ${letterInfo.soundText}`;
+                    renderStageLetterToPicture(targetChar, getDistractors(3));
+                    break;
+
+                case 7: // STAGE 7 — PICTURE TO LETTER
+                    currentActivity.prompt = `Which letter for ${letterInfo.word}?`;
+                    currentActivity.speechPrompt = `${letterInfo.word}! Which letter does it start with?`;
+                    renderStagePictureToLetter(targetChar, getDistractors(3));
+                    break;
+
+                case 8: // STAGE 8 — LETTER SOUNDS
+                    currentActivity.prompt = `${letterInfo.soundText}`;
+                    currentActivity.speechPrompt = `${targetChar} says ${letterInfo.sound}! Which letter makes that sound?`;
+                    renderStageLetterChoices(targetChar, getDistractors(3), false);
+                    break;
+
+                default:
+                    renderStage1(targetChar, letterInfo);
+            }
+
+            document.getElementById('activity-prompt-text').innerText = currentActivity.prompt;
+            speakText(currentActivity.speechPrompt);
+        }
+
+
+        // STAGE 1 RENDERER: LOOK AND HEAR
+        function renderStage1(char, info) {
+            const displayArea = document.getElementById('activity-display-area');
+            const optionsContainer = document.getElementById('activity-options-container');
+
+            displayArea.innerHTML = `
+                <div class="flex flex-col sm:flex-row items-center justify-center gap-6 my-4">
+                    <button onclick="handleCorrectAnswer(this)" class="btn-kid bg-amber-300 hover:bg-amber-400 border-b-8 border-amber-500 rounded-3xl p-6 flex items-center justify-center text-7xl font-black text-amber-900 w-44 h-44 shadow-2xl">
+                        ${char}
+                    </button>
+                    <div class="w-40 h-40 bg-white rounded-3xl p-4 shadow-xl border-4 border-amber-200 flex items-center justify-center">
+                        ${info.svg}
+                    </div>
+                </div>
+                <div class="text-3xl font-extrabold text-amber-800 tracking-wide mt-2">${info.word}</div>
+            `;
+
+            optionsContainer.className = "w-full flex justify-center mt-4";
+            optionsContainer.innerHTML = `
+                <button onclick="handleCorrectAnswer(this)" class="btn-kid bg-emerald-400 hover:bg-emerald-500 text-white font-black text-2xl rounded-2xl px-10 py-4 border-b-4 border-emerald-600 shadow-xl flex items-center gap-3">
+                    <span>NEXT</span> <span>➔</span>
+                </button>
+            `;
+        }
+
+        // STAGE 2, 3 & 8 RENDERER: LETTER CHOICES
+        function renderStageLetterChoices(targetChar, choices, isLower = false, topTarget = null) {
+            const displayArea = document.getElementById('activity-display-area');
+            const optionsContainer = document.getElementById('activity-options-container');
+
+            if (topTarget) {
+                displayArea.innerHTML = `
+                    <div class="bg-indigo-100 border-4 border-indigo-300 rounded-3xl p-6 text-7xl font-black text-indigo-700 shadow-inner my-2">
+                        ${topTarget}
+                    </div>
+                `;
+            } else {
+                displayArea.innerHTML = `
+                    <div class="text-8xl font-black text-indigo-600 my-2 drop-shadow-md">
+                        ${targetChar}
+                    </div>
+                `;
+            }
+
+            optionsContainer.className = `w-full grid grid-cols-${choices.length} gap-4 max-w-lg mx-auto`;
+            optionsContainer.innerHTML = choices.map(char => {
+                const label = isLower ? char.toLowerCase() : char;
+                return `
+                    <button onclick="handleChoiceSelect('${char}', this)" class="btn-kid bg-white hover:bg-sky-50 border-b-8 border-sky-300 hover:border-sky-400 text-slate-800 rounded-3xl text-5xl font-black py-6 shadow-xl flex items-center justify-center border-4 border-sky-100">
+                        ${label}
+                    </button>
+                `;
+            }).join('');
+        }
+
+        // STAGE 4 RENDERER: UPPER TO LOWER
+        function renderStageUpperToLower(targetChar, choices) {
+            const displayArea = document.getElementById('activity-display-area');
+            const optionsContainer = document.getElementById('activity-options-container');
+
+            displayArea.innerHTML = `
+                <div class="bg-pink-100 border-4 border-pink-300 rounded-3xl px-8 py-4 text-8xl font-black text-pink-600 shadow-inner my-2">
+                    ${targetChar}
+                </div>
+            `;
+
+            optionsContainer.className = `w-full grid grid-cols-${choices.length} gap-4 max-w-lg mx-auto`;
+            optionsContainer.innerHTML = choices.map(char => {
+                return `
+                    <button onclick="handleChoiceSelect('${char}', this)" class="btn-kid bg-white hover:bg-pink-50 border-b-8 border-pink-300 hover:border-pink-400 text-pink-600 rounded-3xl text-6xl font-black py-6 shadow-xl flex items-center justify-center border-4 border-pink-100">
+                        ${char.toLowerCase()}
+                    </button>
+                `;
+            }).join('');
+        }
+
+        // STAGE 5 RENDERER: LOWER TO UPPER
+        function renderStageLowerToUpper(targetChar, choices) {
+            const displayArea = document.getElementById('activity-display-area');
+            const optionsContainer = document.getElementById('activity-options-container');
+
+            displayArea.innerHTML = `
+                <div class="bg-purple-100 border-4 border-purple-300 rounded-3xl px-8 py-4 text-8xl font-black text-purple-600 shadow-inner my-2">
+                    ${targetChar.toLowerCase()}
+                </div>
+            `;
+
+            optionsContainer.className = `w-full grid grid-cols-${choices.length} gap-4 max-w-lg mx-auto`;
+            optionsContainer.innerHTML = choices.map(char => {
+                return `
+                    <button onclick="handleChoiceSelect('${char}', this)" class="btn-kid bg-white hover:bg-purple-50 border-b-8 border-purple-300 hover:border-purple-400 text-purple-600 rounded-3xl text-6xl font-black py-6 shadow-xl flex items-center justify-center border-4 border-purple-100">
+                        ${char}
+                    </button>
+                `;
+            }).join('');
+        }
+
+        // STAGE 6 RENDERER: LETTER TO PICTURE
+        function renderStageLetterToPicture(targetChar, choices) {
+            const displayArea = document.getElementById('activity-display-area');
+            const optionsContainer = document.getElementById('activity-options-container');
+
+            displayArea.innerHTML = `
+                <div class="bg-amber-100 border-4 border-amber-300 rounded-3xl px-8 py-3 text-7xl font-black text-amber-700 shadow-inner my-2">
+                    ${targetChar}
+                </div>
+            `;
+
+            optionsContainer.className = `w-full grid grid-cols-3 gap-3 max-w-xl mx-auto`;
+            optionsContainer.innerHTML = choices.map(char => {
+                const info = ALPHABET_DATA[char];
+                return `
+                    <button onclick="handleChoiceSelect('${char}', this)" class="btn-kid bg-white hover:bg-amber-50 border-b-8 border-amber-200 text-slate-800 rounded-3xl p-3 shadow-xl flex flex-col items-center justify-center border-4 border-amber-100 h-36">
+                        <div class="w-20 h-20">${info.svg}</div>
+                        <span class="text-sm font-bold mt-1 text-slate-600">${info.word}</span>
+                    </button>
+                `;
+            }).join('');
+        }
+
+        // STAGE 7 RENDERER: PICTURE TO LETTER
+        function renderStagePictureToLetter(targetChar, choices) {
+            const displayArea = document.getElementById('activity-display-area');
+            const optionsContainer = document.getElementById('activity-options-container');
+
+            const info = ALPHABET_DATA[targetChar];
+            displayArea.innerHTML = `
+                <div class="w-36 h-36 bg-white rounded-3xl p-4 shadow-xl border-4 border-teal-200 flex flex-col items-center justify-center my-2">
+                    <div class="w-24 h-24">${info.svg}</div>
+                </div>
+                <div class="text-2xl font-black text-teal-800">${info.word}</div>
+            `;
+
+            optionsContainer.className = `w-full grid grid-cols-${choices.length} gap-4 max-w-lg mx-auto`;
+            optionsContainer.innerHTML = choices.map(char => {
+                return `
+                    <button onclick="handleChoiceSelect('${char}', this)" class="btn-kid bg-white hover:bg-teal-50 border-b-8 border-teal-300 text-teal-700 rounded-3xl text-6xl font-black py-6 shadow-xl flex items-center justify-center border-4 border-teal-100">
+                        ${char}
+                    </button>
+                `;
+            }).join('');
+        }
+
+
+        // ==================== INTERACTION HANDLERS ====================
+        function handleChoiceSelect(selectedChar, element) {
+            if (isAnswerLocked) return;
+
+            // CRITICAL INTERACTION RULE: NO FAILURE FEEDBACK
+            // If child touches incorrect answer: DO ABSOLUTELY NOTHING.
+            if (selectedChar !== currentActivity.targetChar) {
+                return; // Absolutely no error sound, red X, shake, or text.
+            }
+
+            // Correct Choice logic
+            handleCorrectAnswer(element);
+        }
+
+        function handleCorrectAnswer(element) {
+            if (isAnswerLocked) return;
+            isAnswerLocked = true;
+
+            // 1. Play Synthesized Sound & Speech
+            playSuccessArpeggio();
+            const praises = ["Awesome!", "Great job!", "You got it!", "Hooray!", "Wonderful!"];
+            const randomPraise = praises[Math.floor(Math.random() * praises.length)];
+            speakText(`${randomPraise} Letter ${currentActivity.targetChar}!`);
+
+            // 2. Animate Correct Target
+            if (element) {
+                element.classList.add('anim-correct');
+            }
+
+            // 3. Trigger Confetti
+            spawnConfetti();
+
+            // 4. Update Mastery & Reward State
+            const letterData = appState.letters[currentActivity.targetChar];
+            letterData.attempts += 1;
+            letterData.correct += 1;
+            letterData.masteryScore = Math.min(100, letterData.masteryScore + 20);
+
+            if (letterData.correct >= 5 && letterData.masteryScore >= 60) {
+                letterData.status = 'mastered';
+            } else {
+                letterData.status = 'practicing';
+            }
+
+            // Award Rewards
+            appState.stars += 1;
+            appState.dailyStars += 1;
+            const rewardType = REWARD_TYPES[Math.floor(Math.random() * REWARD_TYPES.length)].id;
+            appState.rewards[rewardType] = (appState.rewards[rewardType] || 0) + 1;
+
+            saveAppState();
+            updateHeaderUI();
+
+            // Check Daily Goal (5 stars)
+            if (appState.dailyStars === 5) {
+                setTimeout(() => {
+                    document.getElementById('daily-goal-modal').classList.remove('hidden');
+                }, 800);
+            }
+
+            // 5. Automatically advance to next activity after 1.4s delay
+            setTimeout(() => {
+                generateNextActivity();
+            }, 1400);
+        }
+
+        function closeDailyGoalModal() {
+            document.getElementById('daily-goal-modal').classList.add('hidden');
+        }
+
+
+        // ==================== CONFETTI CANVAS ENGINE ====================
+        const confettiCanvas = document.getElementById('confetti-canvas');
+        const ctx = confettiCanvas.getContext('2d');
+        let particles = [];
+
+        function resizeCanvas() {
+            confettiCanvas.width = window.innerWidth;
+            confettiCanvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        function spawnConfetti() {
+            const colors = ['#f472b6', '#38bdf8', '#34d399', '#fbbf24', '#a78bfa'];
+            for (let i = 0; i < 45; i++) {
+                particles.push({
+                    x: window.innerWidth / 2,
+                    y: window.innerHeight / 2,
+                    vx: (Math.random() - 0.5) * 16,
+                    vy: (Math.random() - 0.8) * 16,
+                    size: Math.random() * 12 + 6,
+                    color: colors[Math.floor(Math.random() * colors.length)],
+                    rotation: Math.random() * 360,
+                    rSpeed: (Math.random() - 0.5) * 10,
+                    life: 1
+                });
+            }
+        }
+
+        function animateConfetti() {
+            ctx.clearRect(0, 0, confettiCanvas.width, confettiCanvas.height);
+            particles.forEach((p, idx) => {
+                p.x += p.vx;
+                p.y += p.vy;
+                p.vy += 0.3; // gravity
+                p.rotation += p.rSpeed;
+                p.life -= 0.015;
+
+                ctx.save();
+                ctx.translate(p.x, p.y);
+                ctx.rotate((p.rotation * Math.PI) / 180);
+                ctx.fillStyle = p.color;
+                ctx.globalAlpha = Math.max(0, p.life);
+                ctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size);
+                ctx.restore();
+
+                if (p.life <= 0) particles.splice(idx, 1);
+            });
+            requestAnimationFrame(animateConfetti);
+        }
+        animateConfetti();
+
+
+        // ==================== ALPHABET GRID VIEW ====================
+        function renderAlphabetGrid() {
+            const grid = document.getElementById('alphabet-grid');
+            grid.innerHTML = Object.keys(ALPHABET_DATA).map(char => {
+                const lData = appState.letters[char] || { status: 'locked' };
+                let bg = 'bg-slate-200 text-slate-400 border-slate-300';
+                let badge = '🔒';
+
+                if (appState.unlockedAll || lData.introduced) {
+                    if (lData.status === 'mastered') {
+                        bg = 'bg-amber-100 text-amber-700 border-amber-400 shadow-md';
+                        badge = '⭐';
+                    } else if (lData.status === 'practicing') {
+                        bg = 'bg-emerald-100 text-emerald-700 border-emerald-400';
+                        badge = '🌱';
+                    } else {
+                        bg = 'bg-sky-100 text-sky-700 border-sky-300';
+                        badge = '✨';
+                    }
+                }
+
+                return `
+                    <div onclick="playLetterSoundFromGrid('${char}')" class="${bg} border-4 rounded-2xl p-3 flex flex-col items-center justify-center font-black cursor-pointer hover:scale-105 transition-transform">
+                        <span class="text-xs absolute top-1 right-2">${badge}</span>
+                        <span class="text-3xl">${char}</span>
+                        <span class="text-xs font-bold mt-1">${ALPHABET_DATA[char].word}</span>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function playLetterSoundFromGrid(char) {
+            const info = ALPHABET_DATA[char];
+            speakText(`Letter ${char}. ${info.word}. ${info.soundText}`);
+        }
+
+        // ==================== REWARDS GALLERY VIEW ====================
+        function renderRewardsGallery() {
+            const gallery = document.getElementById('rewards-gallery-grid');
+            gallery.innerHTML = REWARD_TYPES.map(reward => {
+                const count = appState.rewards[reward.id] || 0;
+                return `
+                    <div class="bg-white border-4 border-pink-200 rounded-3xl p-4 flex flex-col items-center justify-center shadow-lg">
+                        <div class="text-5xl my-1">${reward.icon}</div>
+                        <div class="text-2xl font-black text-pink-600">${count}</div>
+                        <div class="text-sm font-bold text-slate-600">${reward.name}</div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+
+        // ==================== ADULT GATE & DASHBOARD ====================
+        let holdTimer = null;
+        let holdStartTime = 0;
+
+        function openAdultGate() {
+            showScreen('adult-gate-screen');
+            setupHoldButton();
+        }
+
+        function setupHoldButton() {
+            const btn = document.getElementById('adult-hold-btn');
+            const progress = document.getElementById('adult-hold-progress');
+
+            const startHold = (e) => {
+                e.preventDefault();
+                holdStartTime = Date.now();
+                progress.style.width = '0%';
+
+                holdTimer = setInterval(() => {
+                    const elapsed = Date.now() - holdStartTime;
+                    const pct = Math.min(100, (elapsed / 3000) * 100);
+                    progress.style.width = `${pct}%`;
+
+                    if (elapsed >= 3000) {
+                        clearInterval(holdTimer);
+                        progress.style.width = '100%';
+                        showScreen('adult-admin-screen');
+                    }
+                }, 50);
+            };
+
+            const endHold = () => {
+                if (holdTimer) clearInterval(holdTimer);
+                progress.style.width = '0%';
+            };
+
+            btn.onmousedown = startHold;
+            btn.onmouseup = endHold;
+            btn.onmouseleave = endHold;
+            btn.ontouchstart = startHold;
+            btn.ontouchend = endHold;
+        }
+
+        function renderAdminTable() {
+            document.getElementById('unlock-all-checkbox').checked = appState.unlockedAll;
+            const tbody = document.getElementById('admin-table-body');
+            tbody.innerHTML = Object.keys(ALPHABET_DATA).map(char => {
+                const lData = appState.letters[char];
+                return `
+                    <tr class="border-b border-slate-200">
+                        <td class="p-2 font-bold text-lg">${char} (${ALPHABET_DATA[char].word})</td>
+                        <td class="p-2">${lData.status}</td>
+                        <td class="p-2">${lData.attempts}</td>
+                        <td class="p-2">${lData.correct}</td>
+                        <td class="p-2">${lData.masteryScore}%</td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function toggleUnlockAll(checked) {
+            appState.unlockedAll = checked;
+            saveAppState();
+            renderAdminTable();
+        }
+
+        function confirmResetProgress() {
+            if (window.confirm("Are you sure you want to reset all progress? This will clear all stars and rewards.")) {
+                localStorage.removeItem('letter_app_state_v1');
+                initAppState();
+                showScreen('home-screen');
+            }
+        }
+
+        // ==================== APP INITIALIZATION ====================
+        window.onload = function() {
+            initAppState();
+            showScreen('home-screen');
+        };
+    </script>
+</body>
+</html>
